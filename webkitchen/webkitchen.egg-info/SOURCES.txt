@@ -1,7 +1,0 @@
-pyproject.toml
-webkitchen.egg-info/PKG-INFO
-webkitchen.egg-info/SOURCES.txt
-webkitchen.egg-info/dependency_links.txt
-webkitchen.egg-info/entry_points.txt
-webkitchen.egg-info/requires.txt
-webkitchen.egg-info/top_level.txt
