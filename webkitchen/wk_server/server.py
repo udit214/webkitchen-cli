@@ -1,0 +1,241 @@
+from fastapi import FastAPI, UploadFile, File, Form
+from pathlib import Path
+import shutil
+import json
+import hashlib
+from fastapi.responses import FileResponse
+import zipfile
+
+app = FastAPI()
+
+SERVER_ROOT = Path("projects")
+SERVER_ROOT.mkdir(exist_ok=True)
+
+
+def get_hash(path: Path):
+    hasher = hashlib.md5()
+
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hasher.update(chunk)
+
+    return hasher.hexdigest()
+
+
+@app.post("/project/upload")
+async def upload_file(
+    project_code: str = Form(...),
+    relative_path: str = Form(...),
+    file: UploadFile = File(...)
+):
+
+    project = SERVER_ROOT / project_code
+
+    if not project.exists():
+        return {"error": "project_not_found"}
+
+    main = project / "main"
+    hashes_file = project / "hashes.json"
+
+    dest = main / relative_path
+    dest.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(dest, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    # ------------------------
+    # Update server hashes
+    # ------------------------
+
+    new_hash = get_hash(dest)
+
+    if hashes_file.exists():
+
+        with open(hashes_file) as f:
+            hashes = json.load(f)
+
+    else:
+        hashes = {}
+
+    hashes[str(relative_path)] = new_hash
+
+    with open(hashes_file, "w") as f:
+        json.dump(hashes, f, indent=4)
+
+    return {
+        "status": "uploaded",
+        "path": relative_path,
+        "hash": new_hash
+    }
+
+@app.get("/project/hashes/{project_code}")
+def get_hashes(project_code: str):
+
+    project = SERVER_ROOT / project_code
+    hashes_file = project / "hashes.json"
+
+    if not hashes_file.exists():
+        return {}
+
+    with open(hashes_file) as f:
+        hashes = json.load(f)
+
+    return hashes
+
+@app.get("/project/hashes/{project_code}")
+def get_project_hashes(project_code: str):
+
+    project = SERVER_ROOT / project_code
+    hashes_file = project / "hashes.json"
+
+    if not project.exists():
+        return {"error": "project_not_found"}
+
+    if not hashes_file.exists():
+        return {}
+
+    with open(hashes_file) as f:
+        hashes = json.load(f)
+
+    return hashes
+
+@app.post("/project/create")
+def create_project(project_code: str):
+
+    project = SERVER_ROOT / project_code
+
+    if project.exists():
+        return {"status": "exists"}
+
+    # create project structure
+    (project / "main").mkdir(parents=True)
+    (project / "updates").mkdir()
+
+    # create collaborators file
+    with open(project / "collaborators.json", "w") as f:
+        json.dump([], f, indent=4)
+
+    # initialize server hashes
+    with open(project / "hashes.json", "w") as f:
+        json.dump({}, f, indent=4)
+
+    return {"status": "created"}
+
+@app.post("/project/join")
+def join_project(data: dict):
+
+    project_code = data["project_code"]
+    username = data["username"]
+    password = data["password"]
+
+    project = SERVER_ROOT / project_code
+    collab_file = project / "collaborators.json"
+
+    if not collab_file.exists():
+        return {"error": "project_not_found"}
+
+    with open(collab_file) as f:
+        collabs = json.load(f)
+
+    for c in collabs:
+        if c["username"] == username and c["password"] == password:
+            return {"status": "ok"}
+
+    return {"error": "auth_failed"}
+
+@app.get("/project/download/{project_code}")
+def download_project(project_code: str):
+
+    project = SERVER_ROOT / project_code
+    main = project / "main"
+
+    if not main.exists():
+        return {"error": "project_not_found"}
+
+    zip_path = project / "project.zip"
+
+    with zipfile.ZipFile(zip_path, "w") as zipf:
+        for file in main.rglob("*"):
+            if file.is_file():
+                zipf.write(file, file.relative_to(main))
+
+    return FileResponse(zip_path, filename="project.zip")
+
+
+@app.get("/updates/{project_code}")
+def list_updates(project_code: str):
+
+    project = SERVER_ROOT / project_code
+    updates_dir = project / "updates"
+
+    if not updates_dir.exists():
+        return []
+
+    updates = []
+
+    for file in updates_dir.glob("*.json"):
+        with open(file) as f:
+            updates.append(json.load(f))
+
+    return updates
+
+@app.get("/project/file/{project_code}")
+def get_file(project_code: str, path: str):
+
+    project = SERVER_ROOT / project_code
+    file_path = project / "main" / path
+
+    if not file_path.exists():
+        return {"error": "file_not_found"}
+
+    return FileResponse(file_path)
+
+@app.post("/project/upload")
+async def upload_file(
+    project_code: str = Form(...),
+    relative_path: str = Form(...),
+    file: UploadFile = File(...)
+):
+
+    project = SERVER_ROOT / project_code
+    main = project / "main"
+
+    dest = main / relative_path
+    dest.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(dest, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    # update hashes
+    hashes_file = project / "hashes.json"
+
+    if hashes_file.exists():
+        with open(hashes_file) as f:
+            hashes = json.load(f)
+    else:
+        hashes = {}
+
+    hashes[str(relative_path)] = get_hash(dest)
+
+    with open(hashes_file, "w") as f:
+        json.dump(hashes, f, indent=4)
+
+    return {"status": "uploaded"}
+
+@app.post("/update/publish")
+def publish_update(data: dict):
+
+    project_code = data["project_code"]
+    update = data["update"]
+
+    project = SERVER_ROOT / project_code
+    updates_dir = project / "updates"
+
+    updates_dir.mkdir(exist_ok=True)
+
+    update_file = updates_dir / f"{update['name']}.json"
+
+    with open(update_file, "w") as f:
+        json.dump(update, f, indent=4)
+
+    return {"status": "stored"}
