@@ -10,7 +10,13 @@ import uuid
 import requests
 import os
 
-app = typer.Typer(help="WebKitchen - Collaborative Dev Tool")
+app = typer.Typer(help=""" 
+Welcome to Web Kitchen
+Developed by:
+- Udit N. Khare
+- Apoorv Verma
+- Swara Verma
+""")
 
 WK_DIR = ".wk"
 CONFIG_PATH = Path("webkitchen/.wk/config.json")
