@@ -1,0 +1,26 @@
+Metadata-Version: 2.4
+Name: webkitchen
+Version: 0.1.0
+Summary: A CLI tool to manage, collaborate, and deploy web projects easily
+Author: Udit N. Khare, Rama Khare, Swara Verma, Apoorv Verma
+Keywords: cli,web,deployment,developer-tools,automation
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: typer
+Requires-Dist: requests
+
+# WebKitchen CLI
+
+A CLI tool to manage, collaborate, and deploy web projects.
+
+## Install
+pip install webkitchen
+
+## Commands
+wk startproject
+wk addcollab
+wk joinproject
+wk publish
