@@ -5,3 +5,11 @@ uvicorn
 passlib[bcrypt]
 bcrypt==4.0.1
 python-jose
+
+
+fastapi
+uvicorn
+requests
+passlib[bcrypt]
+bcrypt==4.0.1
+python-jose
