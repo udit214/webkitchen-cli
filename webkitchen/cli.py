@@ -24,7 +24,7 @@ STAGED_PATH = WK_DIR / "staged.json"
 LOCK_PATH = WK_DIR / "locks.json"
 SESSION_PATH = WK_DIR / "session.json"
 SERVER_ROOT = Path.home() / "WebKitchenServer" / "projects"
-SERVER_URL = "http://127.0.0.1:8000"
+SERVER_URL = "webkitchen-cli.railway.internal"
 
 
 

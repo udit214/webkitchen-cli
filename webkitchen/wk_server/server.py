@@ -41,6 +41,9 @@ def get_current_user(authorization: str = Header(None)):
 
 
 
+@app.get("/")
+def root():
+    return {"status": "WebKitchen server running"}
 
 
 def get_hash(path: Path):
