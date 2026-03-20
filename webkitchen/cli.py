@@ -30,7 +30,7 @@ STAGED_PATH = WK_DIR / "staged.json"
 LOCK_PATH = WK_DIR / "locks.json"
 SESSION_PATH = WK_DIR / "session.json"
 SERVER_ROOT = Path.home() / "WebKitchenServer" / "projects"
-SERVER_URL = "https://web-production-558b9.up.railway.app/docs"
+SERVER_URL = "https://web-production-558b9.up.railway.app"
 
 
 
